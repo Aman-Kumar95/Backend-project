@@ -79,6 +79,8 @@ userSchema.methods.generateAccessToken = function(){
         {
             expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
+
+        // While generating access token keep in mind 1. Payload  2.Access token  3.timetoexpire
     )
 }
 
@@ -92,6 +94,8 @@ userSchema.methods.generateRefreshToken = function(){
         {
             expiresIn: process.env.REFRESH_TOKEN_EXPIRY
         }
+
+        
     )
 }
 
