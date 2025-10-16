@@ -4,6 +4,22 @@ import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+
+const generateAccessAndRefereshTokens= async(userId)=>{
+
+    try {
+         const user= await User.findById(userId)
+         const accessToken= user.generateAccessToken()
+         const refreshToken= user.generateRefreshToken()
+
+ user.refreshToken= refreshToken
+  await user.save({validateBeforeSave: false})
+
+    } catch (error) {
+      throw new ApiError(500,"Something went wrong while generating the refresh and access token")  
+    }
+}
+
 const registerUser = asyncHandler(async(req, res)=>{
 // get user details from frontend 
 // validation - not empty
@@ -113,6 +129,29 @@ const loginUser= asyncHandler(async(req,res)=>{
     if (!isPasswordValid) {
         throw new ApiError(401,"Invalid Credentials")
     }
+
+    const {accessToken,refreshToken}=  await generateAccessAndRefereshTokens(user._id)
+
+    const loggedInUser = User.findById(user._id).select("-password -refreshToken") //This field has been done as we know that user would have given even the password and blank refresh and access token
+
+    const options={
+        httpOnly:true,
+        secure:true
+    }
+
+    return res
+    .status(200)
+    .cookie("accessToken",accessToken,options)
+    .cookie("refreshToken",refreshToken,options)
+    .json(
+        new ApiResponse(
+            200,
+            {
+                user:loggedInUser,refreshToken,accessToken
+            },
+            "User logged In Succesfully"
+        )
+    )
 
 })
 
