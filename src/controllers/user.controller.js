@@ -4,6 +4,7 @@ import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
+import { use } from "react";
 
 
 const generateAccessAndRefereshTokens= async(userId)=>{
@@ -273,7 +274,31 @@ const getCurrentInfo = asyncHandler(async(req,res)=>{
     .status(200,req.user,"current user fetched succesfully")
   })
 
+  const updateAccountDetails = asyncHandler(async(req,res)=>{
+    const {fullName,email} = req.body
+
+    if (!fullName || !email) {
+        throw new ApiError(400,"Particular fields require for change")
+    }
+
+   const user=  User.findByIdAndUpdate(
+        req.user?._id,  //find
+        {
+            $set:{  // update  // use of $set :"Bas is field ko update kar, baki untouched chhod de."
+                fullName : fullName,
+                email :email,
+            } 
+        },
+
+        {new: true} // new : true updated data leke aata hain database se
+    ).select("-password")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200,user,"Account updated succesfully"))
+  })
+
 export {registerUser,
-    loginUser,logoutUser,refreshAccessToken,changeCurrentPassword,getCurrentInfo
+    loginUser,logoutUser,refreshAccessToken,changeCurrentPassword,getCurrentInfo,updateAccountDetails
 }
 
