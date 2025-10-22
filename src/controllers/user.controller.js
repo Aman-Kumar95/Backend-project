@@ -4,7 +4,7 @@ import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
-import { use } from "react";
+import { v2 as cloudinary } from "cloudinary";
 
 
 const generateAccessAndRefereshTokens= async(userId)=>{
@@ -94,7 +94,8 @@ if (!avatar) {
     coverImage:coverImage?.url || "",
     email,
     password,
-    username:username.toLowerCase()
+    username:username.toLowerCase(),
+    avatarPublicId:avatar.public_id
 })
 console.log("There i am")
 // console.log(user);
@@ -271,7 +272,8 @@ const refreshAccessToken= asyncHandler(async(req,res)=>{
 
 const getCurrentInfo = asyncHandler(async(req,res)=>{
     return res
-    .status(200,req.user,"current user fetched succesfully")
+    .status(200)
+    .json(new ApiResponse(200,req.user,"User fetched succesfully"))
   })
 
   const updateAccountDetails = asyncHandler(async(req,res)=>{
@@ -281,7 +283,7 @@ const getCurrentInfo = asyncHandler(async(req,res)=>{
         throw new ApiError(400,"Particular fields require for change")
     }
 
-   const user=  User.findByIdAndUpdate(
+   const user= await User.findByIdAndUpdate(
         req.user?._id,  //find
         {
             $set:{  // update  // use of $set :"Bas is field ko update kar, baki untouched chhod de."
@@ -304,6 +306,11 @@ if (!avatarLocalPath) {
     throw new ApiError(400,"Avatar file is missing")
 }
 
+ const oldUser = await User.findById(req.user?._id) // cloudinary old avatar deleted
+ if (oldUser.avatarPublicId) {
+    await cloudinary.uploader.destroy(oldUser.avatarPublicId)
+ }
+
 const avatar = await uploadOnCloudinary(avatarLocalPath)
 if (!avatar.url) {
     throw new ApiError(400,"Error while uploading avatar")
@@ -313,7 +320,9 @@ if (!avatar.url) {
     req.user._id,
     {
         $set:{
-            avatar:avatar.url
+            avatar:avatar.url,
+            avatarPublicId:avatar.public_id
+            
         }
     },
     {new:true}
