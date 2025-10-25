@@ -424,7 +424,76 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       },
     },
   ]);
+  if (!channel?.length) {
+    throw new ApiError(404, "channel does not exists");
+  }
+  console.log("ha ha i am seing my channel");
+
+  console.log(channel);
+
+  console.log("to dekho na ");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel[0], "User fetched successfully"));
 });
+
+
+
+const forgotPassword = asyncHandler(async(req,res)=>{
+  const {email} = req.body;
+
+  if (!email) {
+    throw new ApiError(400,"Email not found")
+  }
+
+  const user = await User.findOne({email:email})
+  if (!user) {
+    throw new ApiError(401,"User does not exists")
+  }
+
+  const resetToken= jwt.sign(
+    {id: user._id},
+    process.env.RESET_TOKEN_SECRET,
+    {expiresIn:"15m"})
+
+    
+    const resetLink = `http://localhost:8000/api/v1/users/reset-password/${resetToken}`;
+    console.log("Reset link: ",resetLink);
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200,
+      {resetLink},
+      "Password reset link generated succesfully"
+    ))
+    
+})
+
+const resetPassword = asyncHandler(async(req,res)=>{
+  const {token} = req.params;
+  const {newPassword} = req.body;
+
+  if (!token || !newPassword) {
+    throw new ApiError(400,"Token and new password both are required")
+  }
+
+   try {
+    const decodedToken= jwt.verify(token,process.env.RESET_TOKEN_SECRET)
+ 
+    const user = await User.findById(decodedToken._id)
+    if (!user) {
+     throw new ApiError(404,"User not found")
+    }
+ 
+    user.password= newPassword;
+    await user.save({validateBeforeSave:false})
+    return res.status(200)
+    .json(new ApiResponse(200,{},"Password reset succesfully"))
+   } catch (error) {
+    throw new ApiError(400,"Invalid or expired reset token")
+   }
+})
 
 export {
   registerUser,
@@ -437,4 +506,6 @@ export {
   updateUserAvatar,
   updateCoverImage,
   getUserChannelProfile,
+  resetPassword,
+  forgotPassword,
 };
