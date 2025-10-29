@@ -8,7 +8,11 @@ import {
   resetPassword,
   changeCurrentPassword,
   getCurrentInfo,
-  updateAccountDetails,updateUserAvatar,updateCoverImage,getUserChannelProfile
+  updateAccountDetails,
+  updateUserAvatar,
+  updateCoverImage,
+  getUserChannelProfile,
+  updateProfile,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -30,9 +34,8 @@ router.route("/register").post(
 );
 
 router.route("/login").post(loginUser);
-router.route("/forgot-password").post(forgotPassword)
+router.route("/forgot-password").post(forgotPassword);
 router.route("/reset-password/:token").post(resetPassword);
-
 
 //secured routes
 router.route("/logout").post(verifyJWT, logoutUser);
@@ -50,5 +53,7 @@ router
 
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 // router.route("/history").get(verifyJWT, getWatchHistory);
+
+router.route("/update-profile").patch(verifyJWT, updateProfile);
 
 export default router;

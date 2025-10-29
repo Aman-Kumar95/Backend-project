@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import { v2 as cloudinary } from "cloudinary";
+import { use } from "react";
 
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
@@ -453,7 +454,7 @@ const forgotPassword = asyncHandler(async(req,res)=>{
   }
 
   const resetToken= jwt.sign(
-    {id: user._id},
+    {_id: user._id},
     process.env.RESET_TOKEN_SECRET,
     {expiresIn:"15m"})
 
@@ -480,6 +481,8 @@ const resetPassword = asyncHandler(async(req,res)=>{
 
    try {
     const decodedToken= jwt.verify(token,process.env.RESET_TOKEN_SECRET)
+    console.log(decodedToken);
+    
  
     const user = await User.findById(decodedToken._id)
     if (!user) {
@@ -490,9 +493,25 @@ const resetPassword = asyncHandler(async(req,res)=>{
     await user.save({validateBeforeSave:false})
     return res.status(200)
     .json(new ApiResponse(200,{},"Password reset succesfully"))
-   } catch (error) {
-    throw new ApiError(400,"Invalid or expired reset token")
+   } catch (error) {throw new ApiError(400, error.message || "Invalid or expired token");
    }
+})
+
+
+const updateProfile= asyncHandler(async(req,res)=>{
+  const {fullName} = req.body
+  const user= await User.findById(req.user._id)
+  if (!user) {
+    throw new ApiError(404,"User not found")
+
+  }
+if (fullName) {
+  user.fullName= fullName
+  await user.save({validateBeforeSave:false})
+}
+res
+.status(200)
+.json(new ApiResponse(200,user,"Profile updated succesfully"))
 })
 
 export {
@@ -508,4 +527,5 @@ export {
   getUserChannelProfile,
   resetPassword,
   forgotPassword,
+  updateProfile,
 };
