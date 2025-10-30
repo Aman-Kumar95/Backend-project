@@ -14,6 +14,7 @@ import {
   getUserChannelProfile,
   updateProfile,
   deleteProfile,
+  searchUsers,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -37,7 +38,7 @@ router.route("/register").post(
 router.route("/login").post(loginUser);
 router.route("/forgot-password").post(forgotPassword);
 router.route("/reset-password/:token").post(resetPassword);
-
+router.route("/search").get(searchUsers);
 //secured routes
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
@@ -56,5 +57,6 @@ router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 // router.route("/history").get(verifyJWT, getWatchHistory);
 
 router.route("/update-profile").patch(verifyJWT, updateProfile);
-router.route("/delete-account").delete(verifyJWT,deleteProfile)
+router.route("/delete-account").delete(verifyJWT, deleteProfile);
+
 export default router;

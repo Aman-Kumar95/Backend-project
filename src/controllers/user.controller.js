@@ -5,8 +5,6 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import { v2 as cloudinary } from "cloudinary";
-import { use } from "react";
-
 
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
@@ -440,98 +438,115 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, channel[0], "User fetched successfully"));
 });
 
-
-
-const forgotPassword = asyncHandler(async(req,res)=>{
-  const {email} = req.body;
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
 
   if (!email) {
-    throw new ApiError(400,"Email not found")
+    throw new ApiError(400, "Email not found");
   }
 
-  const user = await User.findOne({email:email})
+  const user = await User.findOne({ email: email });
   if (!user) {
-    throw new ApiError(401,"User does not exists")
+    throw new ApiError(401, "User does not exists");
   }
 
-  const resetToken= jwt.sign(
-    {_id: user._id},
+  const resetToken = jwt.sign(
+    { _id: user._id },
     process.env.RESET_TOKEN_SECRET,
-    {expiresIn:"15m"})
+    { expiresIn: "15m" },
+  );
 
-    
-    const resetLink = `http://localhost:8000/api/v1/users/reset-password/${resetToken}`;
-    console.log("Reset link: ",resetLink);
+  const resetLink = `http://localhost:8000/api/v1/users/reset-password/${resetToken}`;
+  console.log("Reset link: ", resetLink);
 
-    return res
+  return res
     .status(200)
-    .json(new ApiResponse(200,
-      {resetLink},
-      "Password reset link generated succesfully"
-    ))
-    
-})
+    .json(
+      new ApiResponse(
+        200,
+        { resetLink },
+        "Password reset link generated succesfully",
+      ),
+    );
+});
 
-const resetPassword = asyncHandler(async(req,res)=>{
-  const {token} = req.params;
-  const {newPassword} = req.body;
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
 
   if (!token || !newPassword) {
-    throw new ApiError(400,"Token and new password both are required")
+    throw new ApiError(400, "Token and new password both are required");
   }
 
-   try {
-    const decodedToken= jwt.verify(token,process.env.RESET_TOKEN_SECRET)
+  try {
+    const decodedToken = jwt.verify(token, process.env.RESET_TOKEN_SECRET);
     console.log(decodedToken);
-    
- 
-    const user = await User.findById(decodedToken._id)
+
+    const user = await User.findById(decodedToken._id);
     if (!user) {
-     throw new ApiError(404,"User not found")
+      throw new ApiError(404, "User not found");
     }
- 
-    user.password= newPassword;
-    await user.save({validateBeforeSave:false})
-    return res.status(200)
-    .json(new ApiResponse(200,{},"Password reset succesfully"))
-   } catch (error) {throw new ApiError(400, error.message || "Invalid or expired token");
-   }
-})
 
-
-const updateProfile= asyncHandler(async(req,res)=>{
-  const {fullName} = req.body
-  const user= await User.findById(req.user._id)
-  if (!user) {
-    throw new ApiError(404,"User not found")
-
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Password reset succesfully"));
+  } catch (error) {
+    throw new ApiError(400, error.message || "Invalid or expired token");
   }
-if (fullName) {
-  user.fullName= fullName
-  await user.save({validateBeforeSave:false})
-}
-res
-.status(200)
-.json(new ApiResponse(200,user,"Profile updated succesfully"))
-})
+});
 
+const updateProfile = asyncHandler(async (req, res) => {
+  const { fullName } = req.body;
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+  if (fullName) {
+    user.fullName = fullName;
+    await user.save({ validateBeforeSave: false });
+  }
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "Profile updated succesfully"));
+});
 
-const deleteProfile= asyncHandler(async(req,res)=>{
-  const {password}= req.body
-  const userId = req.user._id
-  const user= await User.findByIdAndDelete(userId)
+const deleteProfile = asyncHandler(async (req, res) => {
+  const { password } = req.body;
+  const userId = req.user._id;
+  const user = await User.findByIdAndDelete(userId);
 
   if (!user) {
-    throw new ApiError(404,"User not found")
+    throw new ApiError(404, "User not found");
   }
 
   if (!(await user.isPasswordCorrect(password))) {
-    throw new ApiError(400,"Incorrect password")
+    throw new ApiError(400, "Incorrect password");
   }
   return res
-  .status(200)
-  .json(new ApiResponse(200,{},"Account deleted successfully"))
-})
+    .status(200)
+    .json(new ApiResponse(200, {}, "Account deleted successfully"));
+});
+
+const searchUsers = asyncHandler(async (req, res) => {
+  const { query } = req.query;
+
+  if (!query) {
+    throw new ApiError(400, "Search query is required");
+  }
+
+  const users = await User.find({
+    $or: [
+      { username: { $regex: query, $options: "i" } },
+      { fullName: { $regex: query, $options: "i" } },
+    ],
+  }).select("fullName username avatar");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, users, "Search results fetched"));
+});
 
 export {
   registerUser,
@@ -548,4 +563,5 @@ export {
   forgotPassword,
   updateProfile,
   deleteProfile,
+  searchUsers,
 };
