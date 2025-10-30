@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import { v2 as cloudinary } from "cloudinary";
+import { use } from "react";
 
 
 const generateAccessAndRefereshTokens = async (userId) => {
@@ -516,11 +517,16 @@ res
 
 
 const deleteProfile= asyncHandler(async(req,res)=>{
+  const {password}= req.body
   const userId = req.user._id
   const user= await User.findByIdAndDelete(userId)
 
   if (!user) {
     throw new ApiError(404,"User not found")
+  }
+
+  if (!(await user.isPasswordCorrect(password))) {
+    throw new ApiError(400,"Incorrect password")
   }
   return res
   .status(200)
